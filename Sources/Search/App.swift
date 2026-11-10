@@ -654,36 +654,31 @@ struct ContentView: View {
         browser.prefs.sidebar && browser.prefs.sidePosition == .right
     }
 
-    /// Chrome going away gives the page its room at once, the page sliding
-    /// out from under it at its new size. Chrome arriving slides over a page
-    /// still at its old size, which gives up the room once the slide is over.
+    /// The page takes its new room at once, going or coming, and slides with
+    /// the chrome at its new size: laid out the once, as the slide starts,
+    /// and never resized frame by frame.
+    ///
+    /// The room is set without animation while the offset (chrome less room,
+    /// above) is already on its way in the chrome's own transaction, and
+    /// SwiftUI's animations add up: what the offset had still to travel is
+    /// carried over onto the new room, so the page's edge stays on the
+    /// column's from the first frame to the last.
+    ///
+    /// Chrome arriving used to slide over a page still at its old size and
+    /// hand the room over 0.42 s after: the page rode out past the window's
+    /// far edge with the column, then shrank in one jump once everything had
+    /// stopped — and a page that centres itself, which is most of them, went
+    /// right with the column and then jumped back left by half the column's
+    /// width, a second after ⌘S once WebKit had laid it out again.
+    ///
     /// A column being dragged wider or narrower is followed as it goes.
     private func make(room new: CGSize, after old: CGSize) {
-        let now = roomed
-        // Given already, with the chrome itself (see `immersing`).
-        if now == new {
-            roomTicket += 1
-            return
-        }
-        // Out of nothing, or out of the card's gap (see chrome): never more
-        // than that unless something is there.
-        let floor = Metrics.cardGap
-        let arriving = (old.width <= floor && new.width > floor, old.height <= floor && new.height > floor)
-        var at = now
-        if !arriving.0 { at.width = new.width }
-        if !arriving.1 { at.height = new.height }
         roomTicket += 1
+        // Given already, with the chrome itself (see `immersing`).
+        guard roomed != new else { return }
         var still = Transaction()
         still.disablesAnimations = true
-        // With Reduce Motion on, nothing slides: the page takes its new room
-        // with the chrome, not after a slide that isn't there.
-        withTransaction(still) { room = Motion.reduced ? new : at }
-        guard !Motion.reduced, arriving.0 || arriving.1 else { return }
-        let ticket = roomTicket
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
-            guard ticket == roomTicket else { return }
-            withTransaction(still) { room = chrome }
-        }
+        withTransaction(still) { room = new }
     }
 
     /// Everything that rises from the bottom edge to say one thing.
