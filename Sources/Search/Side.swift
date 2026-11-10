@@ -165,7 +165,6 @@ struct SideBar: View {
         }
         .animation(Motion.quick, value: landing)
         .animation(Motion.quick, value: browser.player?.id)
-        .animation(Motion.glide, value: browser.activeID)
         .animation(Motion.glide, value: browser.editingTab)
         .animation(Motion.settle, value: browser.tabs.map(\.id))
         .animation(Motion.settle, value: browser.pinnedCount)
@@ -295,10 +294,9 @@ struct SideBar: View {
                                 .onChange(of: browser.activeID) { _, id in
                                     guard let id else { return }
                                     let representative = browser.activeSplit?.left ?? id
-                                    // Without the glide on a test run: a hidden
-                                    // probe's window draws no frames, and the
-                                    // scroll stopped where its first one left it.
-                                    withAnimation(Store.testing ? nil : Motion.glide) { proxy.scrollTo(representative) }
+                                    // At once, as the switch itself is: no glide
+                                    // between tabs, in the scroll or the highlight.
+                                    proxy.scrollTo(representative)
                                 }
                                 // A turn of the run loop later, as the row across
                                 // the top does it (TabBar.reveal): the folded
@@ -1019,14 +1017,13 @@ private struct PinSquare: View {
                     // pin barely showed among the others).
                     RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
                         .fill(greys.pinLive)
-                        .matchedGeometryEffect(id: "live", in: pill)
                 } else {
                     RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
                         .fill(browser.selectedTabIDs.contains(tab.id) ? greys.wash :
                               hovering ? greys.hover : greys.tile)
                 }
             }
-            .animation(Motion.quick, value: live)
+            .animation(nil, value: live)
         }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
@@ -1292,7 +1289,7 @@ private struct SideRow: View {
         .animation(Motion.quick, value: tab.blockedPopups.isEmpty)
         .animation(Motion.quick, value: tab.translation == nil)
         .animation(Motion.quick, value: peeking)
-        .background { ground.animation(Motion.quick, value: live) }
+        .background { ground.animation(nil, value: live) }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -1345,7 +1342,6 @@ private struct SideRow: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .matchedGeometryEffect(id: "live", in: pill)
         } else if browser.selectedTabIDs.contains(tab.id) {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(greys.wash)

@@ -134,7 +134,7 @@ struct TabBar: View {
                                 .frame(width: row.run)
                                 .onAppear { reveal(reader, in: geo.size.width) }
                                 .onChange(of: row.overflowing) { _, _ in reveal(reader, in: geo.size.width) }
-                                .onChange(of: browser.activeID) { _, _ in reveal(reader, in: geo.size.width, gliding: true) }
+                                .onChange(of: browser.activeID) { _, _ in reveal(reader, in: geo.size.width) }
                             }
                                 .modifier(SwipeShift(offset: browser.spaceSwipeOffset))
                         }
@@ -220,7 +220,6 @@ struct TabBar: View {
             }
         }
         .animation(Motion.quick, value: landing)
-        .animation(Motion.glide, value: browser.activeID)
         // The row makes room for the field on the same spring as everything
         // else. Without this the widths changed between one frame and the next
         // and the tabs appeared to jump aside.
@@ -724,7 +723,7 @@ private struct TabPill: View {
                 loose
             }
         }
-        .background { ground.animation(Motion.quick, value: rowCarrying) }
+        .background { ground.animation(Motion.quick, value: rowCarrying).animation(nil, value: live) }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -925,7 +924,6 @@ private struct TabPill: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .matchedGeometryEffect(id: "live", in: pill)
         } else if browser.selectedTabIDs.contains(tab.id) {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(Palette.wash)

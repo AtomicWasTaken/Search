@@ -153,7 +153,7 @@ struct IconTile: View {
         .overlay(alignment: .bottomTrailing) {
             if speaker { CornerSpeaker(tab: tab) }
         }
-        .background { if !half { ground.animation(Motion.quick, value: live) } }
+        .background { if !half { ground.animation(nil, value: live) } }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -219,7 +219,6 @@ struct IconTile: View {
         if live {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(greys.pinLive)
-                .matchedGeometryEffect(id: "live", in: pill)
         } else if browser.selectedTabIDs.contains(tab.id) {
             RoundedRectangle(cornerRadius: 9, style: .continuous).fill(greys.wash)
         } else if hovering {
@@ -299,7 +298,6 @@ struct IconPair: View {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(greys.pinLive)
                         .padding(2)
-                        .matchedGeometryEffect(id: "live", in: pill)
                 }
             }
     }

@@ -184,7 +184,7 @@ private struct SplitTabHalf: View {
             .padding(.trailing, stacked ? 7 : 4)
             .frame(height: stacked ? height : Self.pillHeight)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background { ground.animation(Motion.quick, value: stacked && focused).animation(Motion.quick, value: joined) }
+            .background { ground.animation(Motion.quick, value: joined).animation(nil, value: focused) }
             .frame(height: height)
             .contentShape(Rectangle())
     }
@@ -265,7 +265,6 @@ private struct SplitTabHalf: View {
                 }
             }
             .clipShape(shape)
-            .matchedGeometryEffect(id: "live", in: pill)
         } else if browser.selectedTabIDs.contains(tab.id) {
             shape.fill(greys.wash)
         } else if hovering {

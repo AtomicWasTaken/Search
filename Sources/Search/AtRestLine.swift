@@ -86,7 +86,9 @@ struct TitleAtRest: View {
                     .transition(.opacity)
             }
         }
-        .animation(Motion.reduced ? nil : .easeInOut(duration: 0.22), value: on)
+        // At once: it turns on as you go to a tab, and the switch between
+        // tabs is instant, with nothing fading on the way.
+        .animation(nil, value: on)
         .animation(nil, value: hovering)
     }
 }
