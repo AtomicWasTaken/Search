@@ -375,7 +375,8 @@ struct SideBar: View {
                     PinGrid(cells: cells) {
                         ForEach(Array(pins.enumerated()), id: \.element.id) { index, tab in
                             PinSquare(browser: browser, prefs: prefs, tab: tab, live: tab.id == row.active,
-                                      pill: pill, width: cells[index].width, height: cells[index].height)
+                                      pill: pill, width: cells[index].width, height: cells[index].height,
+                                      travels: false)
                         }
                     }
                 }
@@ -978,6 +979,10 @@ private struct PinSquare: View {
     let pill: Namespace.ID
     var width: CGFloat = 34
     var height: CGFloat = 34
+    /// Whether the square flies to and from the tab's row when it is pinned
+    /// or let go (TabTravel). Not in another space's rows, drawn as they
+    /// were left, which are never where a pin goes.
+    var travels = true
 
     @State private var hovering = false
     @State private var selectedOnPress = false
@@ -1056,7 +1061,77 @@ private struct PinSquare: View {
         .contextMenu { TabMenu(browser: browser, tab: tab, close: { browser.close(tab) }) }
         .help(tab.label)
         .animation(nil, value: hovering)
-        .transition(.scale(scale: 0.8).combined(with: .opacity))
+        .modifier(TabTravel(id: tab.id, in: pill, on: travels))
+        .transition(PinArrival())
+    }
+}
+
+/// A tab pinned or let go is one thing moving, not one thing going and
+/// another coming: the square sets off from where its row was and the row
+/// heads for where its square is, each fading into the other on the way.
+/// Matched by the tab's own id, on position only — a row and a square are
+/// different shapes, and each keeps its own while the place moves. A tab on
+/// screen in only one of the two (any time but the moment it is pinned or
+/// let go) is drawn where it is, as before.
+private struct TabTravel: ViewModifier {
+    let id: Tab.ID
+    let namespace: Namespace.ID
+    let on: Bool
+
+    init(id: Tab.ID, in namespace: Namespace.ID, on: Bool) {
+        self.id = id
+        self.namespace = namespace
+        self.on = on
+    }
+
+    func body(content: Content) -> some View {
+        // Off: an id no other view has, so nothing ever matches it.
+        content.matchedGeometryEffect(id: on ? AnyHashable(id) : AnyHashable("still \(id)"),
+                                      in: namespace, properties: .position)
+    }
+}
+
+/// A pinned square coming or going: grown from small out of a soft blur, and
+/// back into one. With TabTravel it grows on its way up from the row.
+private struct PinArrival: Transition {
+    func body(content: Content, phase: TransitionPhase) -> some View {
+        content
+            .scaleEffect(phase.isIdentity ? 1 : 0.55)
+            .blur(radius: phase.isIdentity ? 0 : 3)
+            .opacity(phase.isIdentity ? 1 : 0)
+    }
+}
+
+/// A row arriving in the column or leaving it. It opens its own line on the
+/// way in and closes it on the way out, so the rows under it glide down to
+/// make room and glide back up into the space — where before the space came
+/// and went at once, and a closed row faded out on top of the row that had
+/// already jumped into its place. What is in the row drifts in from the
+/// column's outer edge through a soft blur, and drifts back out to it.
+private struct RowArrival: Transition {
+    /// The row's own height, open.
+    let height: CGFloat
+    /// Which way the column's outer edge lies: -1 with the column on the
+    /// left, 1 on the right.
+    let outward: CGFloat
+
+    func body(content: Content, phase: TransitionPhase) -> some View {
+        let shown = phase.isIdentity
+        content
+            .blur(radius: shown ? 0 : 4)
+            .opacity(shown ? 1 : 0)
+            .offset(x: shown ? 0 : outward * (phase == .willAppear ? 12 : 18))
+            .frame(height: shown ? height : 0, alignment: .center)
+            // Only while the line is opening or closing: settled, a row
+            // keeps everything it draws, its press and its shake included.
+            .clipShape(Opening(clips: !shown))
+    }
+
+    private struct Opening: Shape {
+        var clips: Bool
+        func path(in rect: CGRect) -> Path {
+            Path(clips ? rect : rect.insetBy(dx: -400, dy: -400))
+        }
     }
 }
 
@@ -1252,7 +1327,8 @@ private struct SideRow: View {
             shake = 0
             withAnimation(.easeOut(duration: 0.5)) { shake = 1 }
         }
-        .transition(.scale(scale: 0.94, anchor: .leading).combined(with: .opacity))
+        .modifier(TabTravel(id: tab.id, in: pill, on: interactive))
+        .transition(RowArrival(height: prefs.sideRow, outward: prefs.sidePosition == .right ? 1 : -1))
     }
 
     private func hover(_ over: Bool) { hovering = over }
