@@ -297,11 +297,16 @@ final class Preferences: ObservableObject {
         didSet { store.set(startsFresh, forKey: Preferences.freshKey) }
     }
     nonisolated static let freshKey = "start.fresh"
-    /// Ask before the Quit menu or ⌘Q closes the app. Off unless asked for.
+    /// Ask before the Quit menu or ⌘Q closes the app (QuitPrompt). On until
+    /// turned off, here or from the card's "Quit, and don't ask again".
     @Published var confirmsQuit: Bool {
         didSet { store.set(confirmsQuit, forKey: Preferences.confirmQuitKey) }
     }
     nonisolated static let confirmQuitKey = "quit.confirm"
+    /// The same, read from the store with no browser to hand: on unless set.
+    @MainActor static var confirmsQuitStored: Bool {
+        Store.settings.object(forKey: confirmQuitKey) as? Bool ?? true
+    }
     /// Search a site from the address field: the start of its name, then
     /// Tab (see SiteSearch.swift).
     /// Always on since the Settings rework (Drice, 24 Oct 2026): it only
@@ -785,7 +790,7 @@ final class Preferences: ObservableObject {
         frontLinksBeside = store.bool(forKey: "tabs.frontBeside")
         newTabPlace = store.string(forKey: "tabs.newPlace").flatMap(NewTabPlace.init(rawValue:)) ?? .next
         startsFresh = store.bool(forKey: Preferences.freshKey)
-        confirmsQuit = store.bool(forKey: Preferences.confirmQuitKey)
+        confirmsQuit = store.object(forKey: Preferences.confirmQuitKey) as? Bool ?? true
         engineSuggests = store.bool(forKey: "search.suggest")
         siteNotifications = store.object(forKey: "notifications.ask") as? Bool ?? true
         showsTabShortcuts = store.bool(forKey: "tabs.shortcuts")

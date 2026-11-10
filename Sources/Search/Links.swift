@@ -26,26 +26,34 @@ final class Links: NSObject, NSApplicationDelegate {
     @MainActor private static var askingToQuit = false
 
     /// Only the user's Quit command asks; updater and system termination
-    /// still go straight through the existing cleanup below.
+    /// still go straight through the existing cleanup below. Search's own
+    /// card (QuitPrompt), on unless "Quit, and don't ask again" or Settings
+    /// › General turned it off.
     @MainActor static func shouldQuit() -> Bool {
         guard !askingToQuit else { return false }
-        guard Store.settings.bool(forKey: Preferences.confirmQuitKey) else { return true }
+        guard Preferences.confirmsQuitStored else { return true }
         askingToQuit = true
         defer { askingToQuit = false }
-        let alert = NSAlert()
-        alert.messageText = "Quit Search?"
-        alert.informativeText = "Your windows and tabs will close."
-        alert.addButton(withTitle: "Quit").keyEquivalent = ""
-        let cancel = alert.addButton(withTitle: "Cancel")
-        alert.window.defaultButtonCell = cancel.cell as? NSButtonCell
-        // Making Cancel the Return default replaces its Escape equivalent.
-        let escape = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            guard event.window === alert.window, event.keyCode == 53 else { return event }
-            cancel.performClick(nil)
-            return nil
+        return take(QuitPrompt.ask())
+    }
+
+    /// What the card's answer means: whether to quit, and for good.
+    @MainActor static func take(_ answer: QuitPrompt.Answer) -> Bool {
+        switch answer {
+        case .quit:
+            return true
+        case .quitForGood:
+            // Through the browser's settings when there is one, so its
+            // switch in Settings › General follows at once.
+            if let prefs = Browsers.front?.prefs ?? Browsers.primary?.prefs {
+                prefs.confirmsQuit = false
+            } else {
+                Store.settings.set(false, forKey: Preferences.confirmQuitKey)
+            }
+            return true
+        case .stay:
+            return false
         }
-        defer { if let escape { NSEvent.removeMonitor(escape) } }
-        return alert.runModal() == .alertFirstButtonReturn
     }
 
     /// Quitting closes every window on the way out; that isn't a window
