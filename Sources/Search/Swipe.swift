@@ -33,11 +33,12 @@ enum Swipe {
     /// Set only by a test run (see Bench), never by the browser people use.
     @MainActor static var testing: Bool?
 
-    /// No rubber-banding. Pulling past the top of a page showed a band of
-    /// blank ground above it, and nobody who came from Chrome read that as
-    /// anything but a fault. WebKit lets a view turn off the bounce along
-    /// chosen edges natively through `_setRubberBandingEnabled:`. Top and
-    /// bottom never bounce. The sides bounce only on a page pinched in, where
+    /// Rubber-banding, the Mac's own way, at the top and bottom: pulling past
+    /// either end of a page stretches it and lets it spring back, as in
+    /// Safari and every other scroll view on the Mac. A page that stopped
+    /// dead there read as stuck. WebKit lets a view choose the edges that
+    /// bounce natively through `_setRubberBandingEnabled:`. Top and bottom
+    /// always bounce. The sides bounce only on a page pinched in, where
     /// panning on to its edge needs them; at its own size a swipe back is a
     /// pull past the left edge, and the stretch it left behind kept the page
     /// shifted 60 to 120 points to the side (#810, #815). Asked again as each
@@ -52,10 +53,12 @@ enum Swipe {
         guard web.responds(to: set) else { return }
         typealias Setter = @convention(c) (AnyObject, Selector, UInt) -> Void
         // _WKRectEdge: one bit per CGRectEdge (_WKRectEdge.h) — the edges
-        // that keep their bounce. Left and right, and only pinched in.
+        // that keep their bounce. Top and bottom always; left and right only
+        // pinched in.
         let left: UInt = 1 << 0, right: UInt = 1 << 2   // CGRectMinXEdge, CGRectMaxXEdge
+        let top: UInt = 1 << 1, bottom: UInt = 1 << 3   // CGRectMinYEdge, CGRectMaxYEdge
         let sides: UInt = web.magnification > 1 ? left | right : 0
-        unsafeBitCast(web.method(for: set), to: Setter.self)(web, set, sides)
+        unsafeBitCast(web.method(for: set), to: Setter.self)(web, set, top | bottom | sides)
     }
 
     /// Whether a sideways swipe here would scroll something. Said once per
