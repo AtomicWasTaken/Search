@@ -86,13 +86,21 @@ struct SideBar: View {
                 DragStrip()
                     .frame(height: lightsBand)
             } else {
+                // The sidebar's switch beside the lights, back, forward and
+                // reload at the far end (Helm, spread): the window is dragged
+                // by the band between them, and either side of them.
                 HStack(spacing: 0) {
                     DragStrip()
                         .frame(width: 10 + lights)
                     Color.clear
-                        .frame(width: Metrics.helm)
+                        .frame(width: Metrics.helmDoor)
                         .allowsHitTesting(false)
                     DragStrip()
+                    Color.clear
+                        .frame(width: Metrics.helmDoors - Metrics.helmDoor - 4)
+                        .allowsHitTesting(false)
+                    DragStrip()
+                        .frame(width: 10)
                 }
                 .frame(height: Metrics.strip)
             }
@@ -112,8 +120,7 @@ struct SideBar: View {
                 } else {
                     HStack(spacing: 0) {
                         Color.clear.frame(width: lights)
-                        Helm(browser: browser)
-                        Spacer(minLength: 0)
+                        Helm(browser: browser, spread: true)
                     }
                     .frame(height: Metrics.strip)
                 }

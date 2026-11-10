@@ -547,20 +547,59 @@ struct Helm: View {
     @ObservedObject var browser: Browser
     /// One above the other, for the column of icons.
     var vertical = false
+    /// The switch at the start and back, forward and reload pushed to the
+    /// far end, across the whole width offered: the column's top row.
+    var spread = false
 
     var body: some View {
-        if let tab = browser.active {
-            Wheel(browser: browser, tab: tab, vertical: vertical)
-        } else {
-            // Nowhere to go and nothing to reload: the doors stay in place,
-            // greyed, so the row doesn't shift when a tab arrives.
-            Helm.stack(vertical) {
-                Door(icon: "chevron.left") {}
-                Door(icon: "chevron.right") {}
-                Door(icon: "arrow.clockwise") {}
+        Helm.stack(vertical) {
+            // ⌘S as a button, first in the row as in Safari: the column, or
+            // the strip, away and back on the same slide (Browser.toggleFold).
+            FoldDoor(browser: browser)
+            if spread && !vertical { Spacer(minLength: 0) }
+            if let tab = browser.active {
+                Wheel(browser: browser, tab: tab, vertical: vertical)
+            } else {
+                // Nowhere to go and nothing to reload: the doors stay in place,
+                // greyed, so the row doesn't shift when a tab arrives.
+                Helm.stack(vertical) {
+                    Door(icon: "chevron.left") {}
+                    Door(icon: "chevron.right") {}
+                    Door(icon: "arrow.clockwise") {}
+                }
+                .opacity(0.3)
+                .allowsHitTesting(false)
             }
-            .opacity(0.3)
-            .allowsHitTesting(false)
+        }
+    }
+
+    /// The sidebar's switch: its picture follows the side the tabs are on,
+    /// and its tip says what a press does, as the View menu does.
+    private struct FoldDoor: View {
+        @ObservedObject var browser: Browser
+        @ObservedObject var prefs: Preferences
+
+        init(browser: Browser) {
+            self.browser = browser
+            self.prefs = browser.prefs
+        }
+
+        private var icon: String {
+            guard prefs.sidebar else { return "rectangle.topthird.inset.filled" }
+            return prefs.sidePosition == .right ? "sidebar.right" : "sidebar.left"
+        }
+
+        private var help: String {
+            let what = prefs.shrinks && !browser.folded
+                ? (prefs.sideIcons ? "Show Sidebar Titles" : "Show Sidebar as Icons Only")
+                : prefs.sidebar
+                    ? (browser.folded ? "Show Sidebar" : "Hide Sidebar")
+                    : (browser.folded ? "Show Tab Bar" : "Hide Tab Bar")
+            return what + "   ⌘S"
+        }
+
+        var body: some View {
+            Door(icon: icon, help: help) { browser.toggleFold() }
         }
     }
 

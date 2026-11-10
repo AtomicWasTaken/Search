@@ -160,9 +160,9 @@ enum Metrics {
     /// measured, not guessed — so this leaves them the same air on their right
     /// that the window gives them on their left.
     static let lights: CGFloat = 100
-    /// Back, forward and reload, at the far end of the row beside the
-    /// bookmarks: three doors and the air before the next one.
-    static let helm: CGFloat = 3 * 26 + 2 * 2 + 8
+    /// The sidebar's switch, back, forward and reload, at the far end of the
+    /// row beside the bookmarks: four doors and the air before the next one.
+    static let helm: CGFloat = 4 * 26 + 3 * 2 + 8
     /// The same three doors again, in the sidebar, where they sit right of
     /// the lights instead. The column already has 10 of horizontal padding
     /// of its own before this even starts. 72 put the back door's box 3
@@ -172,8 +172,11 @@ enum Metrics {
     /// first item sits in Safari. A column too narrow for that gives back
     /// what it must (SideBar.lights), down to where it was.
     static let sideLights: CGFloat = 80
-    /// The three doors' own width, without the air after them.
-    static let helmDoors: CGFloat = 3 * 26 + 2 * 4
+    /// The four doors' own width, without the air after them.
+    static let helmDoors: CGFloat = 4 * 26 + 3 * 4
+    /// One door of them: the sidebar's switch, on its own beside the lights
+    /// while the other three sit at the column's far end.
+    static let helmDoor: CGFloat = 26
     /// The band left at the top when there is no strip: just enough for the
     /// traffic lights to sit in, and nothing else.
     static let bare: CGFloat = 34
